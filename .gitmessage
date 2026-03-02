@@ -1,0 +1,16 @@
+<type>(<scope>): <subject>
+
+# Problem Statement:
+# (Why is this change necessary? What issue does it solve?)
+
+# Constraints:
+# (What limitations or hard requirements exist for this solution? e.g., memory, latency, hardware)
+
+# Options Evaluated:
+# (What alternative approaches were considered?)
+
+# Decision Rationale:
+# (Why was this specific option chosen over the alternatives?)
+
+# Known Risks:
+# (What could break? What assumptions are being made? Are there edge cases?)

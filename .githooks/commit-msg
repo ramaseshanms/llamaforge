@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Git commit-msg hook to enforce LlamaForge commit discipline
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Helper to check if a required header is present
+check_header() {
+    local header="$1"
+    if ! grep -q "^# $header" "$COMMIT_MSG_FILE"; then
+        echo "❌ REJECTED: Missing mandatory section header '# $header'."
+        exit 1
+    fi
+}
+
+# Helper to check if there is actual content under a header (not just comments/empty lines)
+# It isolates the block of text between the given header and the next header (or end of file),
+# removes all lines starting with '#' and all empty lines. If nothing is left, it's invalid.
+check_content() {
+    local header="$1"
+    
+    # Extract contents under the header until the next header or EOF
+    local content=$(awk -v h="^# $header" '
+        $0 ~ h { flag=1; next }
+        flag && /^# [A-Z]/ { flag=0 }
+        flag { print }
+    ' "$COMMIT_MSG_FILE")
+    
+    # Strip comments and empty lines
+    local real_content=$(echo "$content" | grep -v '^[[:space:]]*#' | grep -v '^[[:space:]]*$')
+    
+    if [ -z "$real_content" ]; then
+        echo "❌ REJECTED: Mandatory section '# $header' is empty or contains only template comments."
+        echo "   Please provide a detailed explanation."
+        exit 1
+    fi
+}
+
+check_header "Problem Statement:"
+check_header "Constraints:"
+check_header "Options Evaluated:"
+check_header "Decision Rationale:"
+check_header "Known Risks:"
+
+check_content "Problem Statement:"
+check_content "Constraints:"
+check_content "Options Evaluated:"
+check_content "Decision Rationale:"
+check_content "Known Risks:"
+
+# Check conventional commit format on the first non-comment line
+FIRST_LINE=$(grep -v '^[[:space:]]*#' "$COMMIT_MSG_FILE" | grep -v '^[[:space:]]*$' | head -n 1)
+if ! echo "$FIRST_LINE" | grep -Eq "^(feat|fix|docs|style|refactor|perf|test|chore|ci)(\([^)]+\))?: .+"; then
+    echo "❌ REJECTED: Commit subject does not follow conventional commits format."
+    echo "   Expected: <type>(<scope>): <subject>"
+    echo "   E.g., feat(kv-cache): implement sliding window eviction"
+    exit 1
+fi
+
+echo "✅ Commit message passed LlamaForge discipline checks."
+exit 0
