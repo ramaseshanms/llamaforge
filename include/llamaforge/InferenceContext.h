@@ -2,6 +2,8 @@
 
 #include "SessionState.h"
 #include "ModelStore.h"
+#include "ArenaAllocator.h"
+#include "PagedKVCache.h"
 
 #include <memory>
 #include <stdexcept>
@@ -29,7 +31,10 @@ namespace llamaforge {
  */
 class InferenceContext {
 public:
-    InferenceContext(std::shared_ptr<ModelStore> model, size_t max_batch_size, size_t num_threads);
+    InferenceContext(std::shared_ptr<ModelStore> model, 
+                     std::shared_ptr<PagedKVCache> global_kv,
+                     size_t max_batch_size, 
+                     size_t num_threads);
     ~InferenceContext();
 
     // Prevent moving or copying. Bound strictly to a worker thread's hardware resources.
@@ -61,11 +66,15 @@ public:
 
 private:
     std::shared_ptr<ModelStore> model_;
+    std::shared_ptr<PagedKVCache> global_kv_;
     std::shared_ptr<SessionState> current_session_;
 
     // Core ggml state for graph building 
     ggml_context* compute_ctx_ = nullptr;
     
+    // Fixed hardware scratch pad (no dynamic mallocs during inference)
+    std::unique_ptr<ArenaAllocator> scratch_arena_;
+
     // Core llama.cpp state for scheduled execution
     llama_context* llama_ctx_ = nullptr;
 

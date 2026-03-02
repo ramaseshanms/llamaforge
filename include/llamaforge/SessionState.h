@@ -10,6 +10,8 @@
 struct llama_context;
 struct llama_kv_cache;
 
+#include "PagedKVCache.h"
+
 namespace llamaforge {
 
 class ModelStore;
@@ -67,13 +69,15 @@ public:
     SessionStatus GetStatus() const { return status_.load(); }
     void SetStatus(SessionStatus s) { status_.store(s); }
 
-    // Internal access for executor
-    struct PagedCacheLayer {
-        void* backing_buffer;
-        size_t size_bytes;
-        // ggml specific
-    };
-    PagedCacheLayer* GetCacheLayer() { return &cache_layer_; }
+    // KV Cache Block Paging
+    /// Maps a new logical block to the next available physical block from the global cache.
+    /// @throws LlamaResourceExhaustedException if quota exceeded or global OOM.
+    void AllocateNextBlock(PagedKVCache& global_cache);
+    
+    /// Releases all held physical blocks back to the global cache (O(1) teardown).
+    void ReleaseContext(PagedKVCache& global_cache);
+
+    const VirtualBlockTable& GetBlockTable() const { return block_table_; }
 
 private:
     uint32_t session_id_;
@@ -83,7 +87,7 @@ private:
     uint32_t current_pos_ = 0;
     size_t max_context_size_;
 
-    PagedCacheLayer cache_layer_{};
+    VirtualBlockTable block_table_;
     std::mutex state_mutex_;
 };
 

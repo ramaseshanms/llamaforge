@@ -15,6 +15,8 @@ set(SOURCES
     src/runtime/ModelStore.cpp
     src/session/SessionState.cpp
     src/runtime/InferenceContext.cpp
+    src/runtime/ArenaAllocator.cpp
+    src/runtime/PagedKVCache.cpp
 )
 
 # Core library
@@ -22,3 +24,7 @@ add_library(llamaforge_core STATIC ${SOURCES})
 target_include_directories(llamaforge_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # We want to make sure the headers compile without syntax errors.
+
+# Tests
+add_executable(test_memory_managers tests/test_memory_managers.cpp)
+target_link_libraries(test_memory_managers PRIVATE llamaforge_core)

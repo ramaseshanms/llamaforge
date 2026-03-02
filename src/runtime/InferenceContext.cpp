@@ -2,8 +2,11 @@
 
 namespace llamaforge {
 
-InferenceContext::InferenceContext(std::shared_ptr<ModelStore> model, size_t max_batch_size, size_t num_threads)
-    : model_(std::move(model)), max_batch_size_(max_batch_size), num_threads_(num_threads) {
+InferenceContext::InferenceContext(std::shared_ptr<ModelStore> model, 
+                                   std::shared_ptr<PagedKVCache> global_kv,
+                                   size_t max_batch_size, 
+                                   size_t num_threads)
+    : model_(std::move(model)), global_kv_(std::move(global_kv)), max_batch_size_(max_batch_size), num_threads_(num_threads) {
     AllocateScratchBuffers();
 }
 
@@ -36,11 +39,12 @@ void InferenceContext::OnTokenGenerated(TokenCallback callback) {
 }
 
 void InferenceContext::AllocateScratchBuffers() {
-    // Stub
+    // e.g. 256MB fixed size for scratch evaluations
+    scratch_arena_ = std::make_unique<ArenaAllocator>(256 * 1024 * 1024);
 }
 
 void InferenceContext::ReleaseScratchBuffers() {
-    // Stub
+    scratch_arena_.reset();
 }
 
 } // namespace llamaforge
